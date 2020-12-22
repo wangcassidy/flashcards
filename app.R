@@ -30,7 +30,7 @@ ui <- navbarPage(
                                    "Choose CSV File",
                                    multiple = FALSE,
                                    accept = c("text/csv",
-                                              "text/comma-separated-values,text/plain",
+                                              "text/comma-separated-values_t,text/plain",
                                               ".csv")),
                          
                          p("A valid CSV file should consist of 2 columns. The first column should contain the questions, and the second column should contain the answers."),
@@ -165,10 +165,13 @@ ui <- navbarPage(
 
 
 server <- function(input, output) {
-    values <- reactiveValues(isdf=FALSE, index=0)
-    values$df <- data.frame(Question = "", Answer = "")
-    values$practice_start <- FALSE
-    values$test_start <- FALSE
+    values_p <- reactiveValues(isdf=FALSE, index=0)
+    values_p$df <- data.frame(Question = "", Answer = "")
+    values_p$practice_start <- FALSE
+    
+    values_t <- reactiveValues(isdf=FALSE, index=0)
+    values_t$df <- data.frame(Question = "", Answer = "")
+    values_t$test_start <- FALSE
     
     # Read in CSV file and save as dataframe 
     output$contents <- DT::renderDataTable(DT::datatable({
@@ -200,8 +203,10 @@ server <- function(input, output) {
             ))
         } else {
             names(df) <- c("Question", "Answer")
-            values$df <- df
-            values$isdf <- TRUE
+            values_p$df <- df
+            values_t$df <- df
+            values_p$isdf <- TRUE
+            values_t$isdf <- TRUE
             return(df)
         }
     }))
@@ -210,7 +215,7 @@ server <- function(input, output) {
     
     # Show blank card to start, or tell user to add cards if no cards have been added yet
     output$practice_question <- renderPlot({
-        if (!values$isdf) {
+        if (!values_p$isdf) {
             draw_card("Please add cards.", "Question")
         } else {
             draw_card("", "Question")
@@ -224,12 +229,12 @@ server <- function(input, output) {
     observeEvent(
         input$practice_start,
         {
-            if (values$isdf) {
-                values$practice_start <- TRUE
-                values$index <- 1
-                values$ordering <- sample(1:dim(values$df)[1], dim(values$df)[1], replace=FALSE)
+            if (values_p$isdf) {
+                values_p$practice_start <- TRUE
+                values_p$index <- 1
+                values_p$ordering <- sample(1:dim(values_p$df)[1], dim(values_p$df)[1], replace=FALSE)
                 output$practice_question <- renderPlot({
-                    text <- as.character(values$df[values$ordering[values$index], "Question"])
+                    text <- as.character(values_p$df[values_p$ordering[values_p$index], "Question"])
                     draw_card(text, "Question")
                 })
                 output$practice_answer <- renderPlot({
@@ -242,9 +247,9 @@ server <- function(input, output) {
     observeEvent(
         input$practice_reveal,
         {
-            if (values$practice_start && values$isdf && values$index <= dim(values$df)[1]) {
+            if (values_p$practice_start && values_p$isdf && values_p$index <= dim(values_p$df)[1]) {
                 output$practice_answer <- renderPlot({
-                    text <- as.character(values$df[values$ordering[values$index], "Answer"])
+                    text <- as.character(values_p$df[values_p$ordering[values_p$index], "Answer"])
                     draw_card(text, "Answer")
                 })
             }
@@ -253,11 +258,14 @@ server <- function(input, output) {
     
     observeEvent(
         input$practice_next,
-        {
-            if (values$practice_start && values$isdf && values$index < dim(values$df)[1]) {
-                values$index <- values$index + 1
+        {print(values_p$index)
+            print(dim(values_p$df)[1])
+            print(values_p$practice_start)
+            print(values_p$isdf)
+            if (values_p$practice_start && values_p$isdf && values_p$index < dim(values_p$df)[1]) {
+                values_p$index <- values_p$index + 1
                 output$practice_question <- renderPlot({
-                    text <- as.character(values$df[values$ordering[values$index], "Question"])
+                    text <- as.character(values_p$df[values_p$ordering[values_p$index], "Question"])
                     draw_card(text, "Question")
                 })
                 output$practice_answer <- renderPlot({
@@ -265,8 +273,8 @@ server <- function(input, output) {
                 })
             }
             
-            if (values$practice_start && values$isdf && values$index >= dim(values$df)[1]) {
-                values$index <- values$index + 1
+            if (values_p$practice_start && values_p$isdf && values_p$index >= dim(values_p$df)[1]) {
+                values_p$index <- values_p$index + 1
                 output$practice_question <- renderPlot({
                     draw_card("Done! Press Restart to practice again.", "Question")
                 })
@@ -278,13 +286,13 @@ server <- function(input, output) {
     )
     
     ################################# Test ################################# 
-    values$correct <- 0
-    values$incorrect <- 0
-    values$result <- data.frame(correct=numeric(0), incorrect=numeric(0))
+    values_t$correct <- 0
+    values_t$incorrect <- 0
+    values_t$result <- data.frame(correct=numeric(0), incorrect=numeric(0))
     
     # Show blank card to start, or tell user to add cards if no cards have been added yet
     output$test_question <- renderPlot({
-        if (!values$isdf) {
+        if (!values_t$isdf) {
             draw_card("Please add cards.", "Question")
         } else {
             draw_card("", "Question")
@@ -298,20 +306,20 @@ server <- function(input, output) {
     observeEvent(
         input$test_start,
         {
-            if (values$isdf) {
-                values$test_start <- TRUE
-                values$index <- 1
-                values$s <- min(isolate(input$ncards), nrow(values$df))
-                values$ordering <- sample(1:nrow(values$df), size=values$s, replace=FALSE)
+            if (values_t$isdf) {
+                values_t$test_start <- TRUE
+                values_t$index <- 1
+                values_t$s <- min(isolate(input$ncards), nrow(values_t$df))
+                values_t$ordering <- sample(1:nrow(values_t$df), size=values_t$s, replace=FALSE)
                 output$test_question <- renderPlot({
-                    text <- as.character(values$df[values$ordering[values$index], "Question"])
+                    text <- as.character(values_t$df[values_t$ordering[values_t$index], "Question"])
                     draw_card(text, "Question")
                 })
                 output$test_answer <- renderPlot({
                     draw_card("", "Answer")
                 })
-                values$correct <- 0
-                values$incorrect <- 0
+                values_t$correct <- 0
+                values_t$incorrect <- 0
             }
         }
     )
@@ -319,9 +327,9 @@ server <- function(input, output) {
     observeEvent(
         input$test_reveal,
         {
-            if (values$test_start && values$isdf &&  values$index <= values$s) {
+            if (values_t$test_start && values_t$isdf &&  values_t$index <= values_t$s) {
                 output$test_answer <- renderPlot({
-                    text <- as.character(values$df[values$ordering[values$index], "Answer"])
+                    text <- as.character(values_t$df[values_t$ordering[values_t$index], "Answer"])
                     draw_card(text, "Answer")
                 })
             }
@@ -331,28 +339,28 @@ server <- function(input, output) {
     observeEvent(
         input$correct,
         { 
-            if (values$test_start && values$isdf &&  values$index <= values$s) {
+            if (values_t$test_start && values_t$isdf &&  values_t$index <= values_t$s) {
                 output$test_question <- renderPlot({
-                    text <- as.character(values$df[values$ordering[values$index], "Question"])
+                    text <- as.character(values_t$df[values_t$ordering[values_t$index], "Question"])
                     draw_card(text, "Question")
                 })
                 output$test_answer <- renderPlot({
                     draw_card("", "Answer")
                 })
                 
-                values$index <- values$index + 1
-                values$correct <- values$correct + 1
+                values_t$index <- values_t$index + 1
+                values_t$correct <- values_t$correct + 1
             }
             
-            if (values$test_start && values$isdf && values$index == values$s + 1) {
+            if (values_t$test_start && values_t$isdf && values_t$index == values_t$s + 1) {
                 output$test_question <- renderPlot({
-                    draw_card(paste("Score:", round(values$correct / (values$correct + values$incorrect) * 100, 2), "%"), "Question")
+                    draw_card(paste("Score:", round(values_t$correct / (values_t$correct + values_t$incorrect) * 100, 2), "%"), "Question")
                 })
                 output$test_answer <- renderPlot({
                     draw_card("", "Answer")
                 })
-                values$index <- values$index + 1
-                values$result <- rbind(values$result, data.frame(correct=values$correct, incorrect=values$incorrect))
+                values_t$index <- values_t$index + 1
+                values_t$result <- rbind(values_t$result, data.frame(correct=values_t$correct, incorrect=values_t$incorrect))
             }
         }
     )
@@ -360,42 +368,42 @@ server <- function(input, output) {
     observeEvent(
         input$incorrect,
         {
-            if (values$test_start && values$isdf && values$index <= values$s) {
+            if (values_t$test_start && values_t$isdf && values_t$index <= values_t$s) {
                 output$test_question <- renderPlot({
-                    text <- as.character(values$df[values$ordering[values$index], "Question"])
+                    text <- as.character(values_t$df[values_t$ordering[values_t$index], "Question"])
                     draw_card(text, "Question")
                 })
                 output$test_answer <- renderPlot({
                     draw_card("", "Answer")
                 })
-                values$index <- values$index + 1
-                values$incorrect <- values$incorrect + 1
+                values_t$index <- values_t$index + 1
+                values_t$incorrect <- values_t$incorrect + 1
             }
             
-            if (values$test_start && values$isdf && values$index == values$s + 1) {
+            if (values_t$test_start && values_t$isdf && values_t$index == values_t$s + 1) {
                 output$test_question <- renderPlot({
-                    draw_card(paste("Score:", round(values$correct / (values$correct + values$incorrect) * 100, 2), "%"), "Question")
+                    draw_card(paste("Score:", round(values_t$correct / (values_t$correct + values_t$incorrect) * 100, 2), "%"), "Question")
                 })
                 output$practice_answer <- renderPlot({
                     draw_card("", "Answer")
                 })
-                values$index <- values$index + 1
-                values$result <- rbind(values$result, data.frame(correct=values$correct, incorrect=values$incorrect))
+                values_t$index <- values_t$index + 1
+                values_t$result <- rbind(values_t$result, data.frame(correct=values_t$correct, incorrect=values_t$incorrect))
             }
         }
     )
     
     output$trend <- renderPlot({
-        if (nrow(values$result) == 1) {
-            to_plot <- values$result
+        if (nrow(values_t$result) == 1) {
+            to_plot <- values_t$result
             to_plot$perc <- to_plot$correct / (to_plot$correct + to_plot$incorrect) * 100
             ggplot(data=to_plot, aes(x=1, y=perc)) +
                 geom_point() +
                 labs(x="Trial", y="% Correct") + 
                 theme_classic() +
                 scale_x_discrete(breaks=1)
-        } else if (nrow(values$result) > 0) {
-            to_plot <- values$result
+        } else if (nrow(values_t$result) > 0) {
+            to_plot <- values_t$result
             to_plot$perc <- to_plot$correct / (to_plot$correct + to_plot$incorrect) * 100
             ggplot(data=to_plot, aes(x=1:nrow(to_plot), y=perc)) +
                 geom_line() +
@@ -407,16 +415,16 @@ server <- function(input, output) {
     })
     
     # output$bar <- renderPlot({
-    #     if (nrow(values$result) == 1) {
-    #         to_plot <- values$result
+    #     if (nrow(values_t$result) == 1) {
+    #         to_plot <- values_t$result
     #         to_plot$perc <- to_plot$correct / (to_plot$correct + to_plot$incorrect) * 100
     #         ggplot(data=to_plot, aes(x=1, y=perc)) +
     #             geom_bar(position="stack") +
     #             labs(x="Trial", y="% Correct") + 
     #             theme_classic() +
     #             scale_x_discrete(breaks=1)
-    #     } else if (nrow(values$result) > 0) {
-    #         to_plot <- values$result
+    #     } else if (nrow(values_t$result) > 0) {
+    #         to_plot <- values_t$result
     #         to_plot$perc <- to_plot$correct / (to_plot$correct + to_plot$incorrect) * 100
     #         ggplot(data=to_plot, aes(x=1:nrow(to_plot), y=perc)) +
     #             geom_bar(position="stack") +
