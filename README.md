@@ -10,3 +10,8 @@ library(shiny)
 
 runGitHub("flashcards", "wangcassidy", ref = "main")
 ```
+
+### Dependencies
+- R Shiny
+- Tidyverse
+- ggfittext
