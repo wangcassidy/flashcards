@@ -8,5 +8,5 @@ In the R Studio console, run the code below:
 ```r
 library(shiny)
 
-runGitHub("flashcards", "wangcassidy")
+runGitHub("flashcards", "wangcassidy", ref = "main")
 ```
