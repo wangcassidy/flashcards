@@ -11,6 +11,8 @@ library(shiny)
 runGitHub("flashcards", "wangcassidy", ref = "main")
 ```
 
+Or, try it here: https://cassidywang.shinyapps.io/flashcard/
+
 ### Dependencies
 - R Shiny
 - Tidyverse
